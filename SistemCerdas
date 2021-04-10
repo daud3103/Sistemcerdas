@@ -116,10 +116,10 @@ def getElitisme(fit_all):
 
 populasi = generatePop(n_populasi, n_kromosom)
 fit = []
-generasi = 100
+generasi = 50
 
-for i in range(generasi):
-    
+for k in range(generasi):
+  
     fitness_all_pop = fitness_all(populasi)
     
     new_populasi = []
@@ -141,12 +141,10 @@ for i in range(generasi):
         new_populasi += child
         i += 2
     populasi = new_populasi
-
-fitness_all_pop = fitness_all(populasi)
-result = getElitisme(fitness_all_pop)
-
-print('Result')
-print()
-print('Best Chromosom/Induvidu  = ', populasi[result])
-print('Best Fitness             = ', fitness(populasi[result]))
-print('Decode Result            = ', decodeKrom(populasi[result]))
+    fitness_all_pop = fitness_all(populasi)
+    result = getElitisme(fitness_all_pop)
+    print('\nResult Generasi ke-', k+1)
+    print('\nBest Chromosom/Individu  = ', populasi[result])
+    print('Best Fitness             = ', fitness(populasi[result]))
+    print('Decode Result            = ', decodeKrom(populasi[result]))
+    k += 1
