@@ -1,0 +1,152 @@
+import random
+import math
+import pandas_datareader as web
+import pandas as pd
+import numpy as np
+import copy
+import tables
+
+
+
+n_populasi = 100
+n_kromosom = 10
+pc = 0.01
+pm = 0.01
+n_tournament = 5
+
+#memasukan data csv kedalam array saham
+data = web.DataReader('BUDI.JK', data_source='yahoo', start='2020-03-01', end='2020-05-18')
+#data = tables.Last
+lst = []
+for i in data.index:
+    saham ={}
+    saham = data['Close'][i]
+    lst.append(int(saham))
+
+#print(data)
+
+#populasi awal
+def generatePop(n_populasi, n_kromosom):
+    pop = []
+    for i in range(n_populasi):
+        krom = []
+        for y in range(n_kromosom):
+            krom.append((random.randint(-100, 100)) / 100)
+        pop.append(krom) 
+    return pop
+
+#decode kromosom
+def mod(x):
+    return round((x - math.floor(x / 1) * 1), 2)
+
+def decodeKrom(krom=[]):
+    decoded_krom = copy.deepcopy(krom)
+    while len(decoded_krom) < 11:
+        decoded_krom.insert(0, mod(decoded_krom[0] + decoded_krom[1]))
+    while len(decoded_krom) >= 12:
+        decoded_krom[1] = mod(decoded_krom[0] + decoded_krom[1])
+        decoded_krom.pop(0)
+    return decoded_krom
+
+#Fitness
+def fitness(krom=[]):
+    backup_krom = copy.deepcopy(krom)
+    decoded_krom = decodeKrom(backup_krom)
+    fitness = 0
+    for i in range(len(lst) - 11, 1, -1):
+        prediksi = decoded_krom[0]
+        for y in range(10):
+            prediksi += decoded_krom[y + 1] * lst[i + y + 1]
+        temp = lst[i] - prediksi
+        fitness += temp * temp
+    fitness = math.sqrt(fitness)
+    fitness = fitness / (len(lst) - 12)
+    fitness = 1 / fitness
+    return fitness
+
+def fitness_all(pop=[]):
+    population = copy.deepcopy(pop)
+    fitness_all = []
+    for i in range(len(population)):
+        fitness_all.append(fitness(population[i]))
+    return fitness_all
+
+#parent selection
+
+
+def tournamentSelection(pop, n_tournament):
+    best_krom = []
+    for i in range(1, n_tournament):
+        krom = pop[random.randint(0, len(pop) - 1)]
+        if (best_krom == [] or fitness(krom) > fitness(best_krom)):
+            best_krom = krom
+    return best_krom
+
+#crossover
+
+
+def crossover(parent1, parent2, pc, n_kromosom):
+    r = random.random()
+    if (r < pc):
+        j = random.randint(0, n_kromosom - 1)
+        for i in range(j):
+            temp1 = parent2[i]
+            temp2 = parent1[i]
+            parent1[i] = temp1
+            parent2[i] = temp2
+    return parent1, parent2
+
+#mutasi
+
+
+def mutasi(parent1, parent2, pm, n_kromosom):
+    r = random.random()
+    if (r < pm):
+        parent1[random.randint(0, n_kromosom - 1)] = random.randint(0, 9)
+        parent2[random.randint(0, n_kromosom - 1)] = random.randint(0, 9)
+    return parent1, parent2
+
+#ganti generasi
+
+
+def getElitisme(fit_all):
+    return fit_all.index(max(fit_all))
+
+#main program
+
+populasi = generatePop(n_populasi, n_kromosom)
+fit = []
+generasi = 100
+
+for i in range(generasi):
+    
+    fitness_all_pop = fitness_all(populasi)
+    
+    new_populasi = []
+
+    best = getElitisme(fitness_all_pop)
+    fit.append(fitness(populasi[best]))
+    new_populasi.append(populasi[best])
+    new_populasi.append(populasi[best])
+    i = 0
+    while (i < n_populasi - 2):
+        parent1 = tournamentSelection(populasi, n_tournament)
+        parent2 = tournamentSelection(populasi, n_tournament)
+        while (parent1 == parent2):
+            parent2 = tournamentSelection(populasi, n_tournament)
+        par1, par2 = copy.deepcopy(parent1), copy.deepcopy(parent2)
+        
+        child = crossover(par1, par2, pc, n_kromosom)
+        child = mutasi(child[0], child[1], pm, n_kromosom)
+        new_populasi += child
+        i += 2
+    populasi = new_populasi
+
+fitness_all_pop = fitness_all(populasi)
+result = getElitisme(fitness_all_pop)
+
+print('Result')
+print()
+print('Best Chromosom/Induvidu  = ', populasi[result])
+print('Best Fitness             = ', fitness(populasi[result]))
+print('Decode Result            = ', decodeKrom(populasi[result]))
